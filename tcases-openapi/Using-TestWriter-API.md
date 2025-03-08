@@ -54,6 +54,8 @@ add extensions to Tcases for OpenAPI that produce the results you want.
 The work of a TestWriter is carried out via the **TestWriter lifecyle**. This lifecycle consists of a series of steps that
 incrementally produce each part of a complete test program.
 
+### Overview ###
+
 The TestWriter lifecycle is an example of the [Template pattern](https://en.wikipedia.org/wiki/Template_method_pattern).  A
 TestWriter is implemented by a subclass of the abstract `TestWriter` class, which provides the template. Each step of the
 lifecycle is then implemented by a `TestWriter` method.  A lifecycle method may be abstract, in which case every TestWriter
@@ -61,16 +63,43 @@ implementation must provide its own implementation. Or, in other cases, a lifecy
 TestWriter subclass can choose to override, either to replace the superclass method or to add new actions before or after
 invoking the superclass method.
 
-| Lifecycle Method  |                       |                   |                       | Purpose |
-| ---:              | ---                   | :---              | ---                   | --- |
-| prepareTestCases  |                       |                   |                       | Initial TestWriter setup |
-| writeProlog       |                       |                   |                       | Write parts that precede test cases |
-|                   | :arrow_right_hook:    | writeOpening      | :small_blue_diamond:  | Write the opening part of the test program |
-|                   |                       | writeDependencies | :small_blue_diamond:  | Write test case dependencies |
-|                   |                       | writeDeclarations | :small_blue_diamond:  | Write declarations of test components |
-| writeTestCases    |                       |                   |                       | Write all test cases |
-|                   | :arrow_right_hook:    | writeTestCase     |                       | Write a single test case |
-| writeEpilog       |                       |                   |                       | Write parts that follow test cases |
-|                   | :arrow_right_hook:    | writeClosing      | :small_blue_diamond:  | Write the closing part of the test |
+Here is an overview of the TestWriter lifecycle. Each abstract lifecyle method is indicated by :small_blue_diamond:.
 
+| Lifecycle Method  |     |                   | Purpose |
+| ---:              | --- | :---              | --- |
+| prepareTestCases  |     |                   | Setup TestWriter for specified test cases |
+| writeProlog       | :arrow_heading_down:  |                   | Write parts that precede test cases |
+|                   | :small_blue_diamond:  | writeOpening      | Write the opening part of the test program |
+|                   | :small_blue_diamond:  | writeDependencies | Write framework dependencies |
+|                   | :small_blue_diamond:  | writeDeclarations | Write declarations of framework components |
+| writeTestCases    | :arrow_heading_down:  |                   | Write all test cases |
+|                   |     | writeTestCase     | Write a single test case |
+| writeEpilog       | :arrow_heading_down:  |                   | Write parts that follow test cases |
+|                   | :small_blue_diamond:  | writeClosing      | Write the closing part of the test |
 
+### Delegation to TestCaseWriter ###
+
+A TestWriter delegates part of its job to a TestCaseWriter, which is responsible for producing the code that executes a test case.
+Consequently, the TestWriter lifecyle also orchestrates the interplay between TestWriter and TestCaseWriter responsibilities.
+A TestCaseWriter must be an implementation of the `TestCaseWriter` interface and must provide an implementation for each of its
+lifecycle methods.
+
+Here is a overview of how a TestWriter delegates responsibilities to a TestCaseWriter.
+Each TestCaseWriter method is indicated by :small_orange_diamond:.
+
+| Lifecycle Method  |     |                   |     |               | Purpose |
+| ---:              | --- | :---              | --- | ---           | --- |
+| prepareTestCases  | :arrow_heading_down:  |                   |     |               | Setup TestWriter for specified test cases |
+|                   | :small_orange_diamond:  | prepareTestCases  |     |               | Setup TestCaseWriter for specified test cases |
+| writeProlog       | :arrow_heading_down:  |                   |     |               | Write parts that precede test cases |
+|                   | :small_blue_diamond:  | writeOpening      |     |               | Write the opening part of the test program |
+|                   | :small_blue_diamond:  | writeDependencies |     |               | Write framework dependencies |
+|                   | :small_orange_diamond:  | writeDependencies |     |               | Write request execution dependencies |
+|                   | :small_blue_diamond:  | writeDeclarations |     |               | Write declarations of framework components |
+|                   | :small_orange_diamond:  | writeDeclarations |     |               | Write declarations of request execution components |
+| writeTestCases    | :arrow_heading_down:  |                   |     |               | Write all test cases |
+|                   |     | writeTestCase     | :arrow_heading_down:  |               | Write a single test case |
+|                   |     |                   | :small_orange_diamond:  | writeTestCase | Write the body of a single test case |
+| writeEpilog       | :arrow_heading_down:  |                   |     |               | Write parts that follow test cases |
+|                   | :small_orange_diamond:  | writeClosing      |     |               | Write request execution parts that follow test cases |
+|                   | :small_blue_diamond:  | writeClosing      |     |               | Write the closing part of the test |
